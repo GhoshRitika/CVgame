@@ -3,13 +3,6 @@ from cvzone.HandTrackingModule import HandDetector
 import numpy as np
 import random, pygame, cv2, sys, time, pyautogui
 
-
-
-def check_within_goal(goal_pos, rad, pos):
-    if goal_pos[0]-rad<pos[0]<goal_pos[0]+rad and goal_pos[1]-rad<pos[1]<goal_pos[1]+rad:
-        return True
-    else:
-        return False
 class Balloon():
     grabbed = False
     def __init__(self, speed, paper, apple, can, fish, banana, bottle):
@@ -372,10 +365,17 @@ def game_difficult(speed=20, num=15):
         clock.tick(fps)
         count+=1
 def end(score):
-    BG = pygame.image.load('./assests/BackgroundBlue.jpg').convert_alpha()
+    # BG = pygame.image.load('./assests/BackgroundBlue.jpg').convert_alpha()
+    BG1 = pygame.image.load('./assests/EndBackground1.png').convert_alpha()
+    BG1 = pygame.transform.scale(BG1, (width, height))
+    BG2 = pygame.image.load('./assests/EndBackground2.png').convert_alpha()
+    BG2 = pygame.transform.scale(BG2, (width, height))
+    BG3 = pygame.image.load('./assests/EndBackground3.png').convert_alpha()
+    BG3 = pygame.transform.scale(BG3, (width, height))
     detector = HandDetector(detectionCon=0.8, maxHands=2)
     running = True
     button_clicked = False
+    c=0
     while running:
         #getting the frames
         suc, img = capture.read()
@@ -404,7 +404,14 @@ def end(score):
                 button_clicked=False
         else:
             MENU_MOUSE_POS = pygame.mouse.get_pos()
-        window.blit(BG, (0, 0))
+        # window.blit(BG, (0, 0))
+        if c==0:
+            window.blit(BG1, (0, 0))
+        elif c==1:
+            window.blit(BG2, (0, 0))
+        else:
+            window.blit(BG3, (0, 0))
+            c=-1
         # MENU_MOUSE_POS = pygame.mouse.get_pos()
         font_main = pygame.font.Font("./assests/font.ttf", 100)
         font_button = pygame.font.Font("./assests/font.ttf", 75)
@@ -440,13 +447,19 @@ def end(score):
             if QUIT_BUTTON.if_input(MENU_MOUSE_POS):
                 pygame.quit()
                 sys.exit()
-
+        c+=1
         pygame.display.update()
 def main():
-    BG = pygame.image.load('./assests/Background.png').convert_alpha()
+    BG1 = pygame.image.load('./assests/StartingBackground1.png').convert_alpha()
+    BG1 = pygame.transform.scale(BG1, (width, height))
+    BG2 = pygame.image.load('./assests/StartingBackground2.png').convert_alpha()
+    BG2 = pygame.transform.scale(BG2, (width, height))
+    BG3 = pygame.image.load('./assests/StartingBackground3.png').convert_alpha()
+    BG3 = pygame.transform.scale(BG3, (width, height))
     detector = HandDetector(detectionCon=0.8, maxHands=2)
     running = True
     button_clicked = False
+    c=0
     while running:
         #getting the frames
         suc, img = capture.read()
@@ -475,7 +488,13 @@ def main():
                 button_clicked=False
         else:
             MENU_MOUSE_POS = pygame.mouse.get_pos()
-        window.blit(BG, (0, 0))
+        if c==0:
+            window.blit(BG1, (0, 0))
+        elif c==1:
+            window.blit(BG2, (0, 0))
+        else:
+            window.blit(BG3, (0, 0))
+            c=-1
         # MENU_MOUSE_POS = pygame.mouse.get_pos()
         font_main = pygame.font.Font("./assests/font.ttf", 100)
         font_button = pygame.font.Font("./assests/font.ttf", 75)
@@ -515,7 +534,7 @@ def main():
             if QUIT_BUTTON.if_input(MENU_MOUSE_POS):
                 pygame.quit()
                 sys.exit()
-
+        c+=1
         pygame.display.update()
 
 if __name__ == '__main__':
