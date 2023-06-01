@@ -108,7 +108,7 @@ class Button():
 #Pygame setup
 pygame.init()
 width, height = 1280, 720
-window = pygame.display.set_mode((width, height)) #,pygame.FULLSCREEN
+window = pygame.display.set_mode((width, height),pygame.FULLSCREEN) #,pygame.FULLSCREEN
 pygame.display.set_caption("Time to take the Trash Out")
 #Get feed from webcam
 capture = cv2.VideoCapture(0)
@@ -306,7 +306,7 @@ def game_difficult(speed=20, num=15):
                 l, _ = detector.findDistance(lmList[8][:2], lmList[12][:2])
                 temp_img = img.copy()
                 if Balloon.grabbed:
-                    print((middle_x)/2, (middle_y)/2)
+                    # print((middle_x)/2, (middle_y)/2)
                     x, y = (float)((index_x+middle_x)/2), (float)((index_y+middle_y)/2)
                     cv2.circle(temp_img, (middle_x,middle_y), 35, (255, 0, 255), cv2.FILLED)
                     img = cv2.addWeighted(temp_img, 0.5, img, 0.5, 0)
@@ -366,15 +366,16 @@ def game_difficult(speed=20, num=15):
         count+=1
 def end(score):
     # BG = pygame.image.load('./assests/BackgroundBlue.jpg').convert_alpha()
-    BG1 = pygame.image.load('./assests/EndBackground1.png').convert_alpha()
+    BG1 = pygame.image.load('./assests/NoBackground1.png').convert_alpha()
     BG1 = pygame.transform.scale(BG1, (width, height))
-    BG2 = pygame.image.load('./assests/EndBackground2.png').convert_alpha()
+    BG2 = pygame.image.load('./assests/NoBackground2.png').convert_alpha()
     BG2 = pygame.transform.scale(BG2, (width, height))
-    BG3 = pygame.image.load('./assests/EndBackground3.png').convert_alpha()
+    BG3 = pygame.image.load('./assests/NoBackground3.png').convert_alpha()
     BG3 = pygame.transform.scale(BG3, (width, height))
     detector = HandDetector(detectionCon=0.8, maxHands=2)
     running = True
     button_clicked = False
+    clicks=0
     c=0
     while running:
         #getting the frames
@@ -399,11 +400,19 @@ def end(score):
             l, _ = detector.findDistance(lmList[8][:2], lmList[12][:2])
             MENU_MOUSE_POS = index_x, index_y
             if l<30:
-                button_clicked=True
+                clicks+=1
+                if clicks >=3:
+                    button_clicked=True
             if button_clicked and l>45:
                 button_clicked=False
+                clicks=0
         else:
             MENU_MOUSE_POS = pygame.mouse.get_pos()
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgRGB = np.rot90(imgRGB)
+        frame = pygame.surfarray.make_surface(imgRGB).convert()
+        frame = pygame.transform.flip(frame, True, False)
+        window.blit(frame, (0, 0))
         # window.blit(BG, (0, 0))
         if c==0:
             window.blit(BG1, (0, 0))
@@ -450,16 +459,18 @@ def end(score):
         c+=1
         pygame.display.update()
 def main():
-    BG1 = pygame.image.load('./assests/StartingBackground1.png').convert_alpha()
+    print("CALLLLLLLLLLLLLLLLEEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDD")
+    BG1 = pygame.image.load('./assests/NoBackground1.png').convert_alpha()
     BG1 = pygame.transform.scale(BG1, (width, height))
-    BG2 = pygame.image.load('./assests/StartingBackground2.png').convert_alpha()
+    BG2 = pygame.image.load('./assests/NoBackground2.png').convert_alpha()
     BG2 = pygame.transform.scale(BG2, (width, height))
-    BG3 = pygame.image.load('./assests/StartingBackground3.png').convert_alpha()
+    BG3 = pygame.image.load('./assests/NoBackground3.png').convert_alpha()
     BG3 = pygame.transform.scale(BG3, (width, height))
     detector = HandDetector(detectionCon=0.8, maxHands=2)
     running = True
     button_clicked = False
     c=0
+    clicks=0
     while running:
         #getting the frames
         suc, img = capture.read()
@@ -483,11 +494,19 @@ def main():
             l, _ = detector.findDistance(lmList[8][:2], lmList[12][:2])
             MENU_MOUSE_POS = index_x, index_y
             if l<30:#Make if very deliberate
-                button_clicked=True
+                clicks+=1
+                if clicks >=3:
+                    button_clicked=True
             if button_clicked and l>45:
                 button_clicked=False
+                clicks=0
         else:
             MENU_MOUSE_POS = pygame.mouse.get_pos()
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgRGB = np.rot90(imgRGB)
+        frame = pygame.surfarray.make_surface(imgRGB).convert()
+        frame = pygame.transform.flip(frame, True, False)
+        window.blit(frame, (0, 0))
         if c==0:
             window.blit(BG1, (0, 0))
         elif c==1:
@@ -513,7 +532,7 @@ def main():
         for button in [EASY_BUTTON, DIFFICULT_BUTTON, QUIT_BUTTON]:
             button.upd_color(MENU_MOUSE_POS)
             button.upd(window)
-        print(button_clicked)
+        # print(button_clicked)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -530,6 +549,7 @@ def main():
             if EASY_BUTTON.if_input(MENU_MOUSE_POS):
                 game_easy()
             if DIFFICULT_BUTTON.if_input(MENU_MOUSE_POS):
+                print("DIFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFICULT CLICKED")
                 game_difficult()
             if QUIT_BUTTON.if_input(MENU_MOUSE_POS):
                 pygame.quit()
