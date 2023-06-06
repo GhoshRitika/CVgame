@@ -1,21 +1,13 @@
-import cv2, copy, math
+import cv2
 import numpy as np
+import copy
+import math
 
-cap = cv2.VideoCapture(0)
-width, height = 1280, 720
-cap.set(3, width)
-cap.set(4, height)
+# Environment:
+# OS    : Mac OS High Sierra
+# python: 2.7
+# opencv: 3.4.0
 
-while True:
-    ret, frame = cap.read()
-    #smoothing of edges
-    frame = cv2.bilateralFilter(frame, 5, 50, 100)
-    #mirror flip
-    frame = cv2.flip(frame, 1)
-    cv2.imshow("After bilateral filter", frame)
-    k= cv2.waitKey(10)
-    if k==27:
-        break
 # Author
 # asshatter
 # github link : https://github.com/asshatter
@@ -70,18 +62,18 @@ while camera.isOpened():
 
     # Skin detect and thresholding
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lower = np.array([0, 48, 80], dtype="uint8")
-    upper = np.array([20, 255, 255], dtype="uint8")
+    lower = np.array([0, 10, 60], dtype="uint8")
+    upper = np.array([20, 150, 255], dtype="uint8")
     skinMask = cv2.inRange(hsv, lower, upper)
     cv2.imshow('Threshold Hands', skinMask)
 
     # Getting the contours and convex hull
     skinMask1 = copy.deepcopy(skinMask)
-    _,contours, hierarchy = cv2.findContours(skinMask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(skinMask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     length = len(contours)
     maxArea = -1
     if length > 0:
-        for i in xrange(length):
+        for i in range(length):
             temp = contours[i]
             area = cv2.contourArea(temp)
             if area > maxArea:
@@ -95,7 +87,7 @@ while camera.isOpened():
         cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 3)
 
         isFinishCal, cnt = calculateFingers(res, drawing)
-        print "Fingers", cnt
+        print("Fingers", cnt)
         cv2.imshow('output', drawing)
 
     k = cv2.waitKey(10)

@@ -98,9 +98,10 @@ def main():
     print("Hist Created")
     # hist_hsv=np.load("histogram.npy")
     # width, height = 1280, 720
+    # cap = cv2.VideoCapture(0)
     # cap.set(3, width)
     # cap.set(4, height)
-    # cap = cv2.VideoCapture(0)
+
 
     # thresh_HSV=0.028
     # while True:
