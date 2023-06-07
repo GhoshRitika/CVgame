@@ -2,147 +2,91 @@ import cv2
 import numpy as np
 import math
 
+"""This class detects and tracks fingers using histogram base skin color segmentation."""
 class Finger:
     def __init__(self):
-        # self.frame = frame
-        self.hand_hist = hist_hsv=np.load("histogram.npy")
-        self.traverse_point = []
-        self.total_rectangle = 9
-        self.hand_rect_one_x = None
-        self.hand_rect_one_y = None
-        self.hand_rect_two_x = None
-        self.hand_rect_two_y = None
-
-    def calculateFingers(self, res, drawing):
-        #  convexity defect
-        hull = cv2.convexHull(res, returnPoints=False)
-        if len(hull) > 3:
-            defects = cv2.convexityDefects(res, hull)
-            if defects is not None:
-                cnt = 0
-                for i in range(defects.shape[0]):  # calculate the angle
-                    s, e, f, d = defects[i][0]
-                    start = tuple(res[s][0])
-                    end = tuple(res[e][0])
-                    far = tuple(res[f][0])
-                    a = math.sqrt((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2)
-                    b = math.sqrt((far[0] - start[0]) ** 2 + (far[1] - start[1]) ** 2)
-                    c = math.sqrt((end[0] - far[0]) ** 2 + (end[1] - far[1]) ** 2)
-                    angle = math.acos((b ** 2 + c ** 2 - a ** 2) / (2 * b * c))  # cosine theorem
-                    if angle <= math.pi / 2:  # angle less than 90 degree, treat as fingers
-                        cnt += 1
-                        cv2.circle(drawing, far, 8, [211, 84, 0], -1)
-                if cnt > 0:
-                    return True, cnt+1
-                else:
-                    return True, 0
-        return False, 0
-
-    def rescale_frame(self, frame, wpercent=130, hpercent=130):
-        width = int(frame.shape[1] * wpercent / 100)
-        height = int(frame.shape[0] * hpercent / 100)
-        return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
-
-    def contours(self, hist_mask_image):
-        gray_hist_mask_image = cv2.cvtColor(hist_mask_image, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(gray_hist_mask_image, 0, 255, 0)
-        cont, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        return cont
-
-    def draw_rect(self, frame):
-        rows, cols, _ = frame.shape
-        self.hand_rect_one_x = np.array(
-            [6 * rows / 20, 6 * rows / 20, 6 * rows / 20, 9 * rows / 20, 9 * rows / 20, 9 * rows / 20, 12 * rows / 20,
-             12 * rows / 20, 12 * rows / 20], dtype=np.uint32)
-
-        self.hand_rect_one_y = np.array(
-            [9 * cols / 20, 10 * cols / 20, 11 * cols / 20, 9 * cols / 20, 10 * cols / 20, 11 * cols / 20, 9 * cols / 20,
-             10 * cols / 20, 11 * cols / 20], dtype=np.uint32)
-
-        self.hand_rect_two_x = self.hand_rect_one_x + 10
-        self.hand_rect_two_y = self.hand_rect_one_y + 10
-
-        for i in range(self.total_rectangle):
-            cv2.rectangle(frame, (self.hand_rect_one_y[i], self.hand_rect_one_x[i]),
-                          (self.hand_rect_two_y[i], self.hand_rect_two_x[i]),
-                          (0, 255, 0), 1)
-
-        return frame
-
-    def hand_histogram(self, frame):
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        roi = np.zeros([90, 10, 3], dtype=hsv_frame.dtype)
-
-        for i in range(self.total_rectangle):
-            roi[i * 10: i * 10 + 10, 0: 10] = hsv_frame[self.hand_rect_one_x[i]:self.hand_rect_one_x[i] + 10,
-                                              self.hand_rect_one_y[i]:self.hand_rect_one_y[i] + 10]
-
-        hand_hist = cv2.calcHist([roi], [0, 1], None, [180, 256], [0, 180, 0, 256])
-        norm = cv2.normalize(hand_hist, hand_hist, 0, 255, cv2.NORM_MINMAX)
-        np.save("histogram.npy", norm)
-        return norm
-
-    def hist_masking(self, frame, hist):
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        dst = cv2.calcBackProject([hsv], [0, 1], hist, [0, 180, 0, 256], 1)
-        disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31))
-        cv2.filter2D(dst, -1, disc, dst)
-
-        ret, thresh = cv2.threshold(dst, 150, 255, cv2.THRESH_BINARY)
-        thresh = cv2.merge((thresh, thresh, thresh))
-        # cv2.namedWindow('original', cv2.WINDOW_NORMAL)
-        # window_size = (800, 600)
-        # cv2.resizeWindow('original', *window_size)
-        # cv2.imshow("Output", drawing)
-        # cv2.imshow('original', cv2.bitwise_and(frame, thresh))
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        return cv2.bitwise_and(frame, thresh)
-
-    def centroid(self, max_contour):
-        moment = cv2.moments(max_contour)
-        if moment['m00'] != 0:
-            cx = int(moment['m10'] / moment['m00'])
-            cy = int(moment['m01'] / moment['m00'])
-            return cx, cy
+        # Loading previously saved histogram
+        self.hist_hsv =np.load("histogram.npy")
+    """
+    # Reference
+    # Author: Ankush Bhatia
+    # github link : https://github.com/ankushbhatia2/finger_detect_opencv_python/blob/master/hand_detect.py
+    Calculates the number of fingers that are upright, given the number of defects
+    :param defects The protrusions or anamolies in the convex hull
+    :param max The contour with the maximum area
+    :return Number of fingers that are upright
+    """
+    def calculateFingers(self, defects, max):
+        count = 0
+        # loop thorugh all the defects
+        for i in range(defects.shape[0]):
+            s, e, f, _ = defects[i][0]
+            starting_pt = tuple(max[s][0])
+            ending_pt = tuple(max[e][0])
+            farthest_pt = tuple(max[f][0])
+            # calculating the 3 sides of the triangle made by the defect
+            A = ((ending_pt[0] - starting_pt[0]) ** 2 + (ending_pt[1] - starting_pt[1]) ** 2)**0.5
+            B = ((farthest_pt[0] - starting_pt[0]) ** 2 + (farthest_pt[1] - starting_pt[1]) ** 2)**0.5
+            C = ((ending_pt[0] - farthest_pt[0]) ** 2 + (ending_pt[1] - farthest_pt[1]) ** 2)**0.5
+            # using cosine theorem to find the angle between defect starting and ending point
+            angle = math.acos((B ** 2 + C ** 2 - A ** 2) / (2 * C * B))  
+            # angle less than 90 degree, treat as fingers
+            if angle<math.pi/2:
+                count += 1
+        if count > 0:
+            return count+1
         else:
-            return None
+            return 0
+    """
+    Calculates the farthest contour point from the centroid of the maximun contour area
+    :param max The contour with the maximum area
+    :param centroid The position of the centroid of the max contour
+    :param defects The protrusions or anamolies in the convex hull
+    :return The position of the farthest contour point from the centroid of the contour
+    """
+    def find_farthest_point(self, max, centroid, defects):
+        centroid_x, centroid_y = centroid
+        max_dist = -1
+        farthest_point = None
+        for i in range(defects.shape[0]):
+            s, _, _, _ = defects[i][0]
+            start = tuple(max[s][0])
+            distance = math.sqrt((start[0] - centroid_x) ** 2 + (start[1] - centroid_y) ** 2)
+            if distance > max_dist:
+                max_dist = distance
+                farthest_point = start
+        return farthest_point
 
-    def farthest_point(self, defects, contour, centroid):
-        if defects is not None and centroid is not None:
-            s = defects[:, 0][:, 0]
-            cx, cy = centroid
-
-            x = np.array(contour[s][:, 0][:, 0], dtype=np.float64)
-            y = np.array(contour[s][:, 0][:, 1], dtype=np.float64)
-
-            xp = cv2.pow(cv2.subtract(x, cx), 2)
-            yp = cv2.pow(cv2.subtract(y, cy), 2)
-            dist = cv2.sqrt(cv2.add(xp, yp))
-
-            dist_max_i = np.argmax(dist)
-
-            if dist_max_i < len(s):
-                farthest_defect = s[dist_max_i]
-                farthest_point = tuple(contour[farthest_defect][0])
-                return farthest_point
-            else:
-                return None
-
-    def draw_circles(self, frame, traverse_point):
-        if traverse_point is not None:
-            for i in range(len(traverse_point)):
-                cv2.circle(frame, traverse_point[i], int(5 - (5 * i * 3) / 100), [0, 255, 255], -1)
-
-    def manage_image_opr(self, frame):
-        
-        hist_mask_image = self.hist_masking(frame, self.hand_hist)
-
-        hist_mask_image = cv2.erode(hist_mask_image, None, iterations=2)
-        hist_mask_image = cv2.dilate(hist_mask_image, None, iterations=2)
-
-        contour_list = self.contours(hist_mask_image)
-        max_cont = max(contour_list, key=cv2.contourArea)
+    """
+    Detect a hand and its fingers using histogram based skin color segmentation
+    :param frames The image from which a finger is to be detected
+    :return The position of the farthest contour point from the centroid of the contour
+    :return Number of fingers that are upright
+    """
+    def detect_fingers(self, frame):
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # Calculating the back projection of the HSV image based on the skin color histogram
+        back_proj = cv2.calcBackProject([hsv], [0, 1], self.hist_hsv, [0, 180, 0, 256], 1)
+        # 2D convolution with the SE to enhance the back projection
+        SE = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+        cv2.filter2D(back_proj, -1, SE, back_proj)
+        # thresholding at 150 to get a filtered binary image
+        ret, thresh = cv2.threshold(back_proj, 150, 255, cv2.THRESH_BINARY)
+        thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
+        # Create a kernel for erosion
+        kernel = np.ones((3, 3), np.uint8)
+        # Performing opening to smoothen the mask by removing noise
+        thresh = cv2.erode(thresh, kernel, iterations=2)
+        thresh = cv2.dilate(thresh, kernel, iterations=2)
+        # Keeps only the frame pixels from the masked image with non zero values
+        masked_img = cv2.bitwise_and(frame, thresh)
+        # Only for visualization
+        # cv2.imshow("original", masked_img)
+        # Get a list of contours
+        gray_img = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
+        contour_list, hierarchy = cv2.findContours(gray_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # Find the area with the maximum contour area
+        max_cont = None
         length = len(contour_list)
         maxArea = -1
         if length > 0:
@@ -152,43 +96,51 @@ class Finger:
                 if area > maxArea:
                     maxArea = area
                     ci = i
-            res = contour_list[ci]
-            hull = cv2.convexHull(res)
-            drawing = np.zeros(hist_mask_image.shape, np.uint8)
-            cv2.drawContours(drawing, [res], 0, (0, 255, 0), 2)
+            max_cont = contour_list[ci]
+            # This part is for visualization purposes
+            # Get the convex hull and draw the max contour and hull on a blank screen
+            hull = cv2.convexHull(max_cont)
+            drawing = np.zeros(masked_img.shape, np.uint8)
+            cv2.drawContours(drawing, [max_cont], 0, (0, 255, 0), 2)
             cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 3)
-            isFinish, count = self.calculateFingers(res, drawing)
-            # cv2.imshow("Output", drawing)
-        cnt_centroid = self.centroid(max_cont)
-        cv2.circle(frame, cnt_centroid, 5, [255, 0, 255], -1)
-
-        if max_cont is not None:
+            #only for visualizing
+            # cv2.imshow("output", drawing)
+            # Calculate the centroid of the max contour area
+            M = cv2.moments(max_cont)
+            centroid_x = int(M["m10"] / M["m00"])
+            centroid_y = int(M["m01"] / M["m00"])
+            centroid = centroid_x, centroid_y
+            # Get indices of the contour points that form the convex hull.
             hull = cv2.convexHull(max_cont, returnPoints=False)
+            # Get the deviations or concave parts of the max contour are
             defects = cv2.convexityDefects(max_cont, hull)
-            far_point = self.farthest_point(defects, max_cont, cnt_centroid)
-            # print("Centroid : " + str(cnt_centroid) + ", farthest Point : " + str(far_point))
-            cv2.circle(frame, far_point, 5, [0, 0, 255], -1)
-            if len(self.traverse_point) < 20:
-                self.traverse_point.append(far_point)
-            else:
-                self.traverse_point.pop(0)
-                self.traverse_point.append(far_point)
-            print("count : " + str(count) + ", farthest Point : " + str(far_point))
-            return far_point, count
+            if defects is not None:
+                # Calculate the position of the point farthest from the centroid
+                far_point = self.find_farthest_point(max_cont, centroid, defects)
+                # Calculate the number of defects that could be fingers
+                count_fin = self.calculateFingers(defects, max_cont)
+                # Draw a purple filled circle at the centroid of max contour area
+                cv2.circle(frame, centroid, 7, [255, 0, 255], -1)
+                # Draw a red filled circle at the farthest point from the centroid of max contour area
+                cv2.circle(frame, far_point, 7, [0, 0, 255], -1)
+                return far_point, count_fin
 
-# if __name__ == '__main__':
+# if __name__ == '__main__': 
+#     # Size of the screen/window
+#     width, height = 1280, 720
+#     # Getting feed from webcam
 #     capture = cv2.VideoCapture(0)
-
-#     while True:
-#         _, frame = capture.read()
-#         frame = cv2.flip(frame, 1)
-#         finger = Finger()
-#         far, cnt = finger.manage_image_opr(frame)
-#         print("count : " + str(cnt) + ", farthest Point : " + str(far))
-#         cv2.imshow("Live Feed", finger.rescale_frame(frame))
-#         k= cv2.waitKey(10)
+#     capture.set(3, width)
+#     capture.set(4, height)
+#     finger = Finger()
+#     while capture.isOpened():
+#         # getting the frames from webcam input
+#         suc, frame = capture.read()
+#         # Does a horizontal flip, so that the left and right are same on screen
+#         img = cv2.flip(frame, 1)
+#         far, cnt = finger.detect_fingers(img)
+#         cv2.imshow("Live Feed", img)
+#         k = cv2.waitKey(10)
 #         if k==27:
 #             break
-
 #     cv2.destroyAllWindows()
-#     capture.release()

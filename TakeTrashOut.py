@@ -1,21 +1,30 @@
-# file
-# brief Creates a pygame environment with objects thats can be dragged and dropped to a goal using fingers through webcam input
+"""
+Creates a pygame environment with objects thats can be dragged and dropped to a goal using fingers
+through webcam input
+"""
 from cvzone.HandTrackingModule import HandDetector
 import numpy as np
 import random, pygame, cv2, sys, time
 
-# brief A class that creates and keeps track of the trash objects floating on the screen
+"""
+A class that creates and keeps track of the trash objects floating on the screen
+"""
 class Trash():
-    # brief A static variable thats keeps track of whether the finger is already dragging an object
+    """
+    A static variable thats keeps track of whether the finger is already dragging an object
+    """
     grabbed = False
-    # brief Initializes all the necessary public variables
-    # param speed The speed at which this object goes upward
-    # param paper Its is a pygame Surface object of the image of a paper ball, one of the choices of trash objects floating
-    # param apple Its is a pygame Surface object of the image of a apple core, one of the choices of trash objects floating
-    # param can Its is a pygame Surface object of the image of a tin can, one of the choices of trash objects floating
-    # param fish Its is a pygame Surface object of the image of a fish bone, one of the choices of trash objects floating
-    # param banana Its is a pygame Surface object of the image of a banana peel, one of the choices of trash objects floating
-    # param bottle Its is a pygame Surface object of the image of a plastic bottle, one of the choices of trash objects floating
+    """
+    Initializes all the necessary public variables
+    :param speed The speed at which this object goes upward
+    :param paper Its is a pygame Surface object of the image of a paper ball, one of the choices of trash objects floating
+    :param apple Its is a pygame Surface object of the image of a apple core, one of the choices of trash objects floating
+    :param can Its is a pygame Surface object of the image of a tin can, one of the choices of trash objects floating
+    :param fish Its is a pygame Surface object of the image of a fish bone, one of the choices of trash objects floating
+    :param banana Its is a pygame Surface object of the image of a banana peel, one of the choices of trash objects floating
+    :param bottle Its is a pygame Surface object of the image of a plastic bottle, one of the choices of trash objects floating
+    :return None
+    """
     def __init__(self, speed, paper, apple, can, fish, banana, bottle):
         #List of all recyclable trash objects
         self.recycle = [paper, can, bottle]
@@ -40,14 +49,17 @@ class Trash():
         self.end = False
         #In the difficult mode this flag keeps track of whether the object has reached the correct goal
         self.correctgoal = False
-    # brief Updates the position depending on whether the finger has grabbed, dragged or dropped the object
-    # param index_x The x position of the tip of the index finger
-    # param index_y The y position of the tip of the index finger
-    # param middle_x The x position of the tip of the middle finger
-    # param middle_y The y position of the tip of the middle finger
-    # param fingers List of 0s and 1s indicating whether a finger is upright or not
-    # param l The distance between the tip of the index and middle fingers
-    # param rectTrashCan The pygame Rect object containing information regarding the goal image bounding box
+    """
+    Updates the position depending on whether the finger has grabbed, dragged or dropped the object
+    :param index_x The x position of the tip of the index finger
+    :param index_y The y position of the tip of the index finger
+    :param middle_x The x position of the tip of the middle finger
+    :param middle_y The y position of the tip of the middle finger
+    :param fingers List of 0s and 1s indicating whether a finger is upright or not
+    :param l The distance between the tip of the index and middle fingers
+    :param rectTrashCan The pygame Rect object containing information regarding the goal image bounding box
+    :return None
+    """
     def update_pos(self,index_x,index_y,middle_x, middle_y, fingers, l, rectTrashCan):
         #Checks if the finger is already dragging an objects or if this object is being dragged
         if not Trash.grabbed or self.picked:
@@ -72,15 +84,18 @@ class Trash():
                 Trash.grabbed=True
             else:
                 Trash.grabbed=False
-    # brief Updates the position depending on whether the finger has grabbed, dragged or dropped the object when there are 2 goals
-    # param index_x The x position of the tip of the index finger
-    # param index_y The y position of the tip of the index finger
-    # param middle_x The x position of the tip of the middle finger
-    # param middle_y The y position of the tip of the middle finger
-    # param fingers List of 0s and 1s indicating whether a finger is upright or not
-    # param l The distance between the tip of the index and middle fingers
-    # param rectTrashCan The pygame Rect object containing information regarding the Trash Can goal image bounding box
-    # param rectRecycling The pygame Rect object containing information regarding the Recycling bin goal image bounding box
+    """
+    Updates the position depending on whether the finger has grabbed, dragged or dropped the object when there are 2 goals
+    :param index_x The x position of the tip of the index finger
+    :param index_y The y position of the tip of the index finger
+    :param middle_x The x position of the tip of the middle finger
+    :param middle_y The y position of the tip of the middle finger
+    :param fingers List of 0s and 1s indicating whether a finger is upright or not
+    :param l The distance between the tip of the index and middle fingers
+    :param rectTrashCan The pygame Rect object containing information regarding the Trash Can goal image bounding box
+    :param rectRecycling The pygame Rect object containing information regarding the Recycling bin goal image bounding box
+    :return None
+    """
     def update_pos_new(self,index_x,index_y,middle_x, middle_y, fingers, l, rectTrashCan, rectRecycling):
         #Checks if the finger is already dragging an objects or if this object is being dragged
         if not Trash.grabbed or self.picked:
@@ -114,7 +129,9 @@ class Trash():
                 Trash.grabbed=True
             else:
                 Trash.grabbed=False
-    # brief Updates the position of the trash object such that it floats upwards when it is not being dragged by the finger
+    """
+    Updates the position of the trash object such that it floats upwards when it is not being dragged by the finger
+    """
     def move_up(self):
         # Checking whether this object has been picked up by the finger
         if not self.picked:
@@ -125,19 +142,23 @@ class Trash():
             self.picked = False
             if Trash.grabbed:
                 Trash.grabbed=False
-
-# Reference
-# Author : Baraltech
-# github link : https://github.com/baraltech/Menu-System-PyGame/blob/main/button.py
-# brief Creates a button in the pygame interface
+"""
+Reference
+Author : Baraltech
+github link : https://github.com/baraltech/Menu-System-PyGame/blob/main/button.py
+Creates a button in the pygame interface
+"""
 class Button():
-    # brief initializes the public variables when creating an instance of Button
-    # param img The backdround image of the button
-    # param pos The position in the window where the button will appear
-    # param font The font of the text which appears on the button
-    # param text The text that appears on the button
-    # param base The default color of the text on the button
-    # param hov The color of the text on the button when the mouse is hovering over the button
+    """
+    Initializes the public variables when creating an instance of Button
+    :param img The backdround image of the button
+    :param pos The position in the window where the button will appear
+    :param font The font of the text which appears on the button
+    :param text The text that appears on the button
+    :param base The default color of the text on the button
+    :param hov The color of the text on the button when the mouse is hovering over the button
+    :return None
+    """
     def __init__(self, img, pos, font, txt, base, hov):
         self.img = img
         self.pos = pos
@@ -151,20 +172,29 @@ class Button():
         self.txt = self.font.render(self.input_txt, True, self.base)
         # Creating a bounding rectangle for the text positioning it right on top of button image
         self.txtrect = self.txt.get_rect(center=self.pos)
-    # brief Draws the button image and text on the display window
-    # param window The pygame surface object representing the game display console
+    """
+    Draws the button image and text on the display window
+    :param window The pygame surface object representing the game display console
+    :return None
+    """
     def upd(self, window):
         window.blit(self.img, self.imgrect)
         window.blit(self.txt, self.txtrect)
-    # brief Checks whether the cursor is within the bounds of the button
-    # param pos The x,y position of the cursor (could be mouse or finger)
+    """
+    Checks whether the cursor is within the bounds of the button
+    :param pos The x,y position of the cursor (could be mouse or finger)
+    :return If the cursor is within the bounds of the button
+    """
     def if_input(self, pos):
         if self.imgrect.left<=pos[0]<=self.imgrect.right and self.imgrect.top<=pos[1]<=self.imgrect.bottom:
             return True
         else:
             False
-    # brief If the cursor is within the bounding box of the button, it changes the color of the text
-    # param pos The x,y position of the cursor (could be mouse or finger)
+    """
+    If the cursor is within the bounding box of the button, it changes the color of the text
+    :param pos The x,y position of the cursor (could be mouse or finger)
+    :return None
+    """
     def upd_color(self, pos):
         if self.imgrect.left<=pos[0]<=self.imgrect.right and self.imgrect.top<=pos[1]<=self.imgrect.bottom:
             self.txt = self.font.render(self.input_txt, True, self.hover)
@@ -215,8 +245,11 @@ pygame.mixer.music.load('./assests/jelly_fish_jam.mp3')
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
-# brief Starts the easy mode of the drag and drop game
-# param speed The speed at which the object float upwards, the default is 15
+"""
+Starts the easy mode of the drag and drop game
+:param speed The speed at which the object float upwards, the default is 15
+:return None
+"""
 def game_easy(speed=15):
     # Initialize Clock for FPS
     fps = 30
@@ -327,9 +360,12 @@ def game_easy(speed=15):
         # Set FPS
         clock.tick(fps)
 
-# brief Starts the difficult mode of the drag and drop game
-# param speed The speed at which the object float upwards, the default is 20
-# param num The frquency with which new trash objects are created
+"""
+Starts the difficult mode of the drag and drop game
+:param speed The speed at which the object float upwards, the default is 20
+:param num The frquency with which new trash objects are created
+:return None
+"""
 def game_difficult(speed=20, num=15):
     # Initialize Clock for FPS
     fps = 30
@@ -451,8 +487,11 @@ def game_difficult(speed=20, num=15):
         clock.tick(fps)
         count+=1
 
-# brief Updates the window to display a 'Game Over' console
-# param score The score of the player
+"""
+Updates the window to display a 'Game Over' console
+:param score The score of the player
+:return None
+"""
 def end(score):
     # The 3 backgrounds images which alternate to give an animation effect
     BG1 = pygame.image.load('./assests/NoBackground1.png').convert_alpha()
@@ -560,6 +599,12 @@ def end(score):
                 sys.exit()
         c+=1
         pygame.display.update()
+
+"""
+Displays the main menu window
+:param score The score of the player
+:return None
+"""
 def menu():
     # The 3 backgrounds images which alternate to give an animation effect
     BG1 = pygame.image.load('./assests/NoBackground1.png').convert_alpha()
@@ -601,7 +646,7 @@ def menu():
             # Updating the cursor with index fingertip position
             MENU_MOUSE_POS = index_x, index_y
             # If the middle and index finger tips are close together, it is clicking
-            if l<30:
+            if l<45:
                 # To make sure it is a deliberate click, checks if the clicking gesture is consistant for 3 frames
                 clicks+=1
                 if clicks >=3:
